@@ -20,6 +20,5 @@ namespace  AWS_S3Writer.ClientS3
 
         public string AmazonS3ServiceURL { get; set; }
 
-    
     }
 }

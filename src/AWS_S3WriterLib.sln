@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2003
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWS_S3Writer", "AWS_S3Writer\AWS_S3Writer.csproj", "{1C457ED3-2650-4B88-B750-AC710CAF1C68}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWS_S3Writer_UnitTest", "AWS_S3Writer_UnitTest\AWS_S3Writer_UnitTest.csproj", "{FB0B1B84-F93D-406E-8793-C2ACEE73A8BA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1C457ED3-2650-4B88-B750-AC710CAF1C68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C457ED3-2650-4B88-B750-AC710CAF1C68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C457ED3-2650-4B88-B750-AC710CAF1C68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C457ED3-2650-4B88-B750-AC710CAF1C68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB0B1B84-F93D-406E-8793-C2ACEE73A8BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB0B1B84-F93D-406E-8793-C2ACEE73A8BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB0B1B84-F93D-406E-8793-C2ACEE73A8BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB0B1B84-F93D-406E-8793-C2ACEE73A8BA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {70934BBF-0AFC-4355-837A-0832C3BBDAC3}
+	EndGlobalSection
+EndGlobal

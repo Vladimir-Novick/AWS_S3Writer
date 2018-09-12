@@ -8,7 +8,6 @@ namespace AWS_S3Writer.ClientS3
     {
         private static ClientS3ConfigData mConfigS3 = null;
 
-
         public static ClientS3ConfigData GetConfigData
         {
             get
@@ -21,16 +20,11 @@ namespace AWS_S3Writer.ClientS3
             }
         }
 
-
-
         private static void GetConfiguration()
         {
             String configFile = "amazons3.json";
 
-
-
             String pathToTheFile = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "config" + Path.DirectorySeparatorChar + configFile;
-
 
             using (StreamReader file = File.OpenText(pathToTheFile))
             {
@@ -39,7 +33,6 @@ namespace AWS_S3Writer.ClientS3
             }
 
         }
-
 
     }
 }

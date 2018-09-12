@@ -13,6 +13,5 @@ namespace  AWS_S3Writer.ClientS3
         [DataMember]
         public string AmazonS3Key { get; set; }
 
-
     }
 }
