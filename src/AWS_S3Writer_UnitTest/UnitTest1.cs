@@ -10,10 +10,10 @@ namespace AWS_S3Writer_UnitTest
 {
     public class UnitTest1
     {
-        readonly string AmazonS3AccessKey = "xxxxxxxxxxxxxxxxxxxxxxxx";
-        readonly string AmazonS3SecretKey = "yyyyyyyyyyyyyyyyyyyyyyyyy";
-        readonly string AmazonS3ServiceURL = "http://vvvvvvvvvvv.amazonaws.com";
-        readonly string backet_name = "test";
+        readonly string AmazonS3AccessKey = "11111111111111";
+        readonly string AmazonS3SecretKey = "2222222222222222222222222222";
+        readonly string AmazonS3ServiceURL = "http://s3-eu-west-1.amazonaws.com";
+        readonly string backet_name = "4444444444444444444";
 
         public UnitTest1(ITestOutputHelper output)
         {
@@ -48,11 +48,11 @@ namespace AWS_S3Writer_UnitTest
         }
 
         [Fact]
-        public void GetDirList()
+        public void GetDirectories()
         {
             using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
             {
-                List<String> list = client.GetDirList(backet_name);
+                List<String> list = client.GetDirectories(backet_name);
                 foreach (var s in list)
                 {
                     output.WriteLine(s);
@@ -65,7 +65,7 @@ namespace AWS_S3Writer_UnitTest
         {
             using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
             {
-                List<String> list = client.GetDirList(backet_name, "tst");
+                List<String> list = client.GetDirectories(backet_name, "ean");
                 foreach (var s in list)
                 {
                     output.WriteLine(s);
@@ -74,11 +74,11 @@ namespace AWS_S3Writer_UnitTest
         }
 
         [Fact]
-        public void GetFileList()
+        public void GetFiles()
         {
             using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
             {
-                List<String> list = client.GetFileList(backet_name);
+                List<String> list = client.GetFiles(backet_name);
                 foreach (var s in list)
                 {
                     output.WriteLine(s);
@@ -91,7 +91,7 @@ namespace AWS_S3Writer_UnitTest
         {
             using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
             {
-                List<String> list = client.GetFileList(backet_name, "tst");
+                List<String> list = client.GetFiles(backet_name, "ean");
                 foreach (var s in list)
                 {
                     output.WriteLine(s);
@@ -100,11 +100,23 @@ namespace AWS_S3Writer_UnitTest
         }
 
         [Fact]
-        public void MkDir()
+        public void DeleteFiles()
         {
             using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
             {
-                Boolean ret = client.mkDir(backet_name, "tst/t1");
+                List<String> list = client.GetFiles(backet_name, "gta");
+                client.DeleteFiles(backet_name, list);
+            }
+        }
+
+
+
+        [Fact]
+        public void CreateDirectory()
+        {
+            using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
+            {
+                client.CreateDirectory(backet_name, "t44");
             }
         }
 
@@ -117,8 +129,8 @@ namespace AWS_S3Writer_UnitTest
 
                 Parallel.ForEach(FileList, new ParallelOptions { MaxDegreeOfParallelism = 8 }, (st) =>
                 {
-                    Boolean ret = client.UploadFile(st, backet_name,
-                            "tst/t121");
+                    Boolean ret = client.Copy(st, backet_name,
+                            "ean1/t121");
                 });
 
             }
@@ -126,20 +138,20 @@ namespace AWS_S3Writer_UnitTest
 
 
         [Fact]
-        public void UploadFile()
+        public void Copy()
         {
             using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
             {
-                Boolean ret = client.UploadFile(@"C:/development/test.txt", backet_name,
-                    "tst/t12");
+                Boolean ret = client.Copy(@"C:/development/test.txt", backet_name,
+                    "ean/t12");
 
-                Boolean ret2 = client.UploadFile(@"C:/development/test.txt", backet_name,
-                   "tst/t11");
+                Boolean ret2 = client.Copy(@"C:/development/test.txt", backet_name,
+                   "ean/t11");
             }
         }
 
         [Fact]
-        public void UploadStream()
+        public void CopyStream()
         {
             using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
             {
@@ -147,8 +159,98 @@ namespace AWS_S3Writer_UnitTest
                 using (var fileToUploadStream =
                         new FileStream(filePath, FileMode.Open, FileAccess.Read))
                 {
-                    client.UploadStream(fileToUploadStream, backet_name, "t44/tt.nupkg");
+                    client.CopyStream(fileToUploadStream, backet_name, "t44/tt.nupkg");
                 }
+            }
+        }
+
+        [Fact]
+        public void WriteAllText()
+        {
+            using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
+            {
+           
+                    client.WriteAllText(backet_name +  "/writeText.txt","WriteText");
+
+            }
+        }
+
+        [Fact]
+        public void ReadAllText()
+        {
+            using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
+            {
+
+               String text = client.ReadAllText(backet_name + "/writeText.txt");
+                output.WriteLine("Text >" + text);
+            }
+        }
+
+        [Fact]
+        public void Exists_OK()
+        {
+            using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
+            {
+
+                var ok = client.Exists(backet_name , "t44/");
+                Assert.True(ok);
+            }
+        }
+
+        [Fact]
+        public void Exists_FALSE()
+        {
+            using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
+            {
+
+                var ok = client.Exists(backet_name, "t444");
+                Assert.False(ok);
+            }
+        }
+
+
+        [Fact]
+        public void DeleteDirectory()
+        {
+            using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
+            {
+
+                client.DeleteDirectory(backet_name,"t44/");
+              
+            }
+        }
+
+
+        [Fact]
+        public void DeleteDirectory2()
+        {
+            using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
+            {
+
+                client.DeleteDirectory(backet_name +  "/t44/");
+
+            }
+        }
+
+        [Fact]
+        public void Exists_OK2()
+        {
+            using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
+            {
+
+                var ok = client.Exists(backet_name + "/t44/");
+                Assert.True(ok);
+            }
+        }
+
+        [Fact]
+        public void Exists_FALSE2()
+        {
+            using (AWS_S3_Client client = new AWS_S3_Client(AmazonS3ServiceURL, AmazonS3AccessKey, AmazonS3SecretKey))
+            {
+
+                var ok = client.Exists(backet_name+"/t444");
+                Assert.False(ok);
             }
         }
 

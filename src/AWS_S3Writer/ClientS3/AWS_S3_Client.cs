@@ -6,34 +6,14 @@ using System.Linq;
 using System.IO;
 using Amazon.S3.Transfer;
 using System.Threading.Tasks;
-/*
+using System.Text;
 
-
-		Copyright (C) 2018 by Vladimir Novick http://www.linkedin.com/in/vladimirnovick , 
-
-		Permission is hereby granted, free of charge, to any person obtaining a copy
-		of this software and associated documentation files (the "Software"), to deal
-		in the Software without restriction, including without limitation the rights
-		to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-		copies of the Software, and to permit persons to whom the Software is
-		furnished to do so, subject to the following conditions:
-
-		The above copyright notice and this permission notice shall be included in
-		all copies or substantial portions of the Software.
-
-		THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-		IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-		FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-		AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-		LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-		OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-		THE SOFTWARE. 
-
-*/
 namespace AWS_S3Writer.ClientS3
 {
-    public class AWS_S3_Client : IDisposable
+    public class AWS_S3_Client : IDisposable, IS3Client
     {
+
+        
 
         public void Dispose()
         {
@@ -51,6 +31,72 @@ namespace AWS_S3Writer.ClientS3
             }
             Dispose(true);
 
+        }
+
+
+
+
+        /// <summary>
+        ///    Check if file or folder exist : folder like: base_folder/folder/
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <returns></returns>
+        public bool Exists(string filePath)
+        {
+
+            string bucketName, keyName;
+            GetBacketKeys(filePath, out bucketName, out keyName);
+            return Exists(bucketName, keyName);
+
+        }
+
+        private static void GetBacketKeys(string filePath,  out string bucketName, out string keyName)
+        {
+            string _filePath = filePath;
+            bool isFolderCheck = false;
+            if (filePath[filePath.Length - 1] == '/')
+            {
+                isFolderCheck = true;
+                _filePath = _filePath.Substring(0, _filePath.Length - 1);
+            }
+            int indexFolder = _filePath.LastIndexOf("/");
+            bucketName = _filePath.Substring(0, indexFolder);
+            keyName = _filePath.Substring(indexFolder + 1);
+            if (isFolderCheck)
+            {
+                keyName += "/";
+            }
+
+            return ;
+        }
+
+
+        /// <summary>
+        ///    Folder : please like tt/
+        /// </summary>
+        /// <param name="bucket"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public bool Exists(string bucket, string key)
+        {
+            try
+            {
+                GetObjectRequest request = new GetObjectRequest();
+                request.BucketName = bucket;
+                request.Key = key;
+                var response = _client.GetObjectAsync(request).GetAwaiter().GetResult();
+                if (response.ResponseStream != null)
+                {
+                    return true;
+                }
+                return false;
+
+            }
+
+            catch (Exception ex)
+            {
+                    return false;
+            }
         }
 
         protected virtual void Dispose(bool disposing)
@@ -73,10 +119,51 @@ namespace AWS_S3Writer.ClientS3
         }
 
         private AmazonS3Client _client { get; set; } = null;
-		
-	    private TransferUtility fileTransferUtility = null;
 
-		
+
+        public List<List<T>> Partition<T>(List<T> list, int maxSize)
+        {
+            if (list == null)
+                throw new ArgumentNullException("list");
+
+
+
+            List<List<T>> partitions = new List<List<T>>();
+
+            int k = 0;
+
+            bool exit = false;
+
+            while ( true)
+            {
+                List<T> part  = new List<T>();
+                partitions.Add(part);
+                for (int j = k; j < k + maxSize; j++)
+                {
+                    if (j >= list.Count)
+                    {
+                        exit = true;
+                        break;
+                    }
+                    part.Add(list[j]);
+                }
+                k += maxSize;
+                if (exit) { break; }
+            }
+
+            return partitions;
+        }
+
+
+        public void DeleteFiles(string backet_name, List<string> list)
+        {
+           var listOfLists = Partition<String>(list, 1000);
+            foreach (var keys in listOfLists)
+            {
+                DeletePartFiles(backet_name, keys);
+            }
+        }
+
         /// <summary>
         ///   Create AWS S3 Client by config file 
         /// </summary>
@@ -105,7 +192,8 @@ namespace AWS_S3Writer.ClientS3
             makeFileTransport(_client);
         }
 
-      
+        private TransferUtility fileTransferUtility = null;
+
         AmazonS3Client GetAmazonS3Client()
         {
             AmazonS3Client _client = new AmazonS3Client(
@@ -141,55 +229,90 @@ namespace AWS_S3Writer.ClientS3
         ///          myFolder
         ///          myFolder/mySubfolder
         /// </summary>
-        /// <param name="storageKey"></param>
-        /// <param name="strDirName"></param>
+        /// <param name="baseDirectory"></param>
+        /// <param name="newDirecoryName"></param>
         /// <returns></returns>
-        public Boolean mkDir(String storageKey, String strDirName)
+        public void CreateDirectory(String baseDirectory, String newDirecoryName)
         {
-            if (String.IsNullOrWhiteSpace(strDirName))
+            if (String.IsNullOrWhiteSpace(newDirecoryName))
             {
                 new ArgumentNullException("strDirName");
             }
-            String bucket = $"{storageKey}/{strDirName}/";
-            var result = _client.PutBucketAsync(bucket).GetAwaiter().GetResult();
+            String bucket = $"{baseDirectory}/{newDirecoryName}/";
+            CreateDirectory(bucket);
 
-            return true;
-        }
-
-        public static Boolean UploadFile(List<String> filesList, String storageKey, String strDirName)
-        {
-
-            List<String> listFiles = new List<string>();
-
-            foreach (var itemFile in filesList)
-            {
-                listFiles.Add(itemFile);
-                if (listFiles.Count > 19)
-                {
-                    UploadFiles(listFiles, storageKey, strDirName);
-
-                    listFiles.Clear();
-                }
-
-            }
-
-            UploadFiles(listFiles, storageKey, strDirName);
-            return true;
+            return ;
         }
         /// <summary>
-        ///   Parallel upload files to storage directory.
+        ///   Create new direcory : new directory like : $"{baseDirectory}/{newDirecoryName}/
+        /// </summary>
+        /// <param name="newDirecoryFullName"> like  : $"{baseDirectory}/{newDirecoryName}/</param>
+        public void CreateDirectory(String newDirecoryFullName)
+        {
+            var result = _client.PutBucketAsync(newDirecoryFullName).GetAwaiter().GetResult();
+
+        }
+
+        /// <summary>
+        ///    Delete directory 
+        /// </summary>
+        /// <param name="newDirecoryFullName"></param>
+        public void DeleteDirectory(String backet_name, string dir_name)
+        {
+
+            List<String> keys = new List<string>();
+            keys.Add(dir_name);
+
+            DeletePartFiles(backet_name, keys);
+
+        }
+
+        private void DeletePartFiles(string backet_name, List<string> keys)
+        {
+            DeleteObjectsRequest deleteRequest = new DeleteObjectsRequest()
+            {
+                BucketName = backet_name
+
+            };
+
+            foreach (var item in keys)
+            {
+                KeyVersion key = new KeyVersion()
+                {
+                    Key = item
+                };
+                deleteRequest.Objects.Add(key);
+            }
+
+            var result = _client.DeleteObjectsAsync(deleteRequest).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        ///    Delete directory 
+        /// </summary>
+        /// <param name="newDirecoryFullName"></param>
+        public void DeleteDirectory(String directory_name)
+        {
+            GetBacketKeys(directory_name,  out string backet_name, out string keyName);
+            DeleteDirectory(backet_name, keyName);
+        }
+
+
+
+        /// <summary>
+        ///   Parallel upload files to storage directory. -   String bucket = $"{storageKey}/{strDirName}/";
         /// </summary>
         /// <param name="listFiles"></param>
-        /// <param name="storageKey"></param>
+        /// <param name="targetDirectory"></param>
         /// <param name="strDirName"></param>
-        private static void UploadFiles(List<string> listFiles, String storageKey, String strDirName)
+        private static void Copy(List<string> listFiles, String targetDirectory)
         {
             using (AWS_S3_Client client = new AWS_S3_Client())
             {
 
                 Parallel.ForEach(listFiles, new ParallelOptions { MaxDegreeOfParallelism = 8 }, (st) =>
                 {
-                    client.UploadFile(st, storageKey, strDirName);
+                    client.Copy(st, targetDirectory);
                 });
 
             }
@@ -198,8 +321,8 @@ namespace AWS_S3Writer.ClientS3
         /// <summary>
         ///    Upload file to S3 repository
         /// </summary>
-        /// <param name="filePath"></param>
-        /// <param name="storageKey"></param>
+        /// <param name="SourceFile"></param>
+        /// <param name="DistanationFolder"></param>
         /// <param name="strDirName">
         /// 
         /// Like:
@@ -208,11 +331,50 @@ namespace AWS_S3Writer.ClientS3
         /// 
         /// </param>
         /// <returns></returns>
-        public Boolean UploadFile(String filePath, String storageKey, String strDirName)
+        public Boolean Copy(String SourceFile, String DistanationFolder, String strDirName)
         {
 
-            String bucket = $"{storageKey}/{strDirName}";
-            fileTransferUtility.UploadAsync(filePath, bucket).GetAwaiter().GetResult();
+            String bucket = $"{DistanationFolder}/{strDirName}";
+            Copy(SourceFile, bucket);
+
+            return true;
+        }
+
+        public string ReadAllText(string filePath)
+        {
+
+            string responseBody = "";
+
+            int indexFolder = filePath.LastIndexOf("/");
+            String bucketName = filePath.Substring(0, indexFolder);
+            String keyName = filePath.Substring(indexFolder + 1);
+            GetObjectRequest request = new GetObjectRequest
+            {
+                BucketName = bucketName,
+                Key = keyName
+            };
+
+          
+            using (GetObjectResponse response = _client.GetObjectAsync(request).GetAwaiter().GetResult())
+            using (Stream responseStream = response.ResponseStream)
+            using (StreamReader reader = new StreamReader(responseStream))
+            {
+                responseBody = reader.ReadToEnd(); 
+            }
+
+            return responseBody;
+        }
+
+        /// <summary>
+        ///    Copy to Directory
+        /// </summary>
+        /// <param name="SourceFile"></param>
+        /// <param name="DistanationFolder"></param>
+        /// <returns></returns>
+        public Boolean Copy(String SourceFile, String DistanationFolder)
+        {
+
+            fileTransferUtility.UploadAsync(SourceFile, DistanationFolder).GetAwaiter().GetResult();
 
             return true;
         }
@@ -220,23 +382,41 @@ namespace AWS_S3Writer.ClientS3
         /// <summary>
         ///   Upload Stream to Repository
         /// </summary>
-        /// <param name="dataStrem"></param>
-        /// <param name="storageKey"></param>
-        /// <param name="keyName">
+        /// <param name="InputStrem"></param>
+        /// <param name="storeFolderOrS3Key"></param>
+        /// <param name="fileName">
         ///      Like :
         ///      "t44/tt.txt"
         /// </param>
         /// <returns></returns>
-        public Boolean UploadStream(Stream dataStrem, String storageKey, String keyName)
+        public Boolean CopyStream(Stream InputStrem, String storeFolderOrS3Key, String fileName)
         {
 
-            fileTransferUtility.UploadAsync(dataStrem, storageKey, keyName).GetAwaiter().GetResult();
+            fileTransferUtility.UploadAsync(InputStrem, storeFolderOrS3Key, fileName).GetAwaiter().GetResult();
 
             return true;
         }
 
         /// <summary>
-        ///   RGet list of files 
+        ///    Write all text to file : path -like : storeFolderOrS3Key/fileName
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="contents"></param>
+        public void WriteAllText(string path, string contents)
+        {
+            int indexFolder = path.LastIndexOf("/");
+            String storeFolderOrS3Key = path.Substring(0, indexFolder) ;
+            String fileName = path.Substring(indexFolder + 1);
+            var tbytes = Encoding.UTF8.GetBytes(contents);
+            var tstream = new MemoryStream(tbytes);
+            CopyStream(tstream, storeFolderOrS3Key, fileName);
+        }
+
+
+
+
+        /// <summary>
+        ///   Get list of files from sub directory
         /// </summary>
         /// <param name="storageKey"></param>
         /// <param name="filter">
@@ -248,7 +428,7 @@ namespace AWS_S3Writer.ClientS3
         /// 
         /// </param>
         /// <returns></returns>
-        public List<String> GetFileList(String storageKey, String filter = null)
+        public List<String> GetFiles(String storageKey, String filter = null)
         {
             ListObjectsRequest request;
 
@@ -290,7 +470,7 @@ namespace AWS_S3Writer.ClientS3
         ///           or null
         ///    </param>
         /// <returns></returns>
-        public List<String> GetDirList(String storageKey, String filter = null)
+        public List<String> GetDirectories(String storageKey, String filter = null)
         {
             ListObjectsRequest request;
 
